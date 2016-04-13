@@ -6,6 +6,7 @@ from PySide import QtGui
 from PySide.QtGui import *
 
 from view import Ui_Wienwahl
+from model import CSVManager, TableModel
 
 import sys
 import os
@@ -25,17 +26,30 @@ class Controller(QMainWindow):
         #Menue verlinken
         self.linkMenu()
 
+        #Init
+        self.model = TableModel()
+        self.filename = None
+
     def createShortcuts(self):
         QShortcut(QKeySequence("CTRL+Q"), self, self.exit)
 
     def linkMenu(self):
         self.view.actionExit.triggered.connect(self.exit)
+        self.view.actionOpen.triggered.connect(self.open)
+        self.view.actionNew.triggered.connect(self.new)
 
     def open(self):
-        pass
+        self.fileName = QFileDialog.getOpenFileName(self,"Open Image", QDir.homePath(), "CSV Files (*.csv)")
+        csv = CSVManager.importCSV(self, self.fileName[0])
+        self.model.update(csv[0],csv[1])
+        self.view.tableView.setModel(self.model)
+
 
     def new(self):
-        pass
+        csvheader = [["Col1"],["Col2"]]
+        csvdata = [["Data1","Data2"]]
+        self.model.update(csvheader, csvdata)
+        self.view.tableView.setModel(self.model)
 
     def save(self):
         pass
