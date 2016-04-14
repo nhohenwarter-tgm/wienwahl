@@ -30,6 +30,8 @@ class Controller(QMainWindow):
         #Init
         self.model = TableModel()
         self.filename = None
+        self.view.tableView.setSortingEnabled(True)
+        self.view.tableView.resizeColumnsToContents()
 
     def createShortcuts(self):
         QShortcut(QKeySequence("CTRL+Q"), self, self.exit)
@@ -45,6 +47,7 @@ class Controller(QMainWindow):
         self.view.actionDeleteRow.triggered.connect(self.deleteRow)
 
     def open(self):
+        self.view.statusBar.showMessage("Opening file...", 2000)
         self.fileName = QFileDialog.getOpenFileName(self,"Open CSV", QDir.homePath(), "CSV Files (*.csv)")
         csv = CSVManager.importCSV(self, self.fileName[0])
         self.model.update(csv[0],csv[1])
@@ -54,6 +57,7 @@ class Controller(QMainWindow):
 
 
     def new(self):
+        self.view.statusBar.showMessage("Creating new file...", 750)
         csvheader = [["#"],["Col1"],["Col2"]]
         csvdata = [["1","Data1","Data2"]]
         self.model.update(csvheader, csvdata)
@@ -62,25 +66,31 @@ class Controller(QMainWindow):
         self.view.tableView.setModel(self.model)
 
     def save(self):
+        self.view.statusBar.showMessage("Saving to file...", 2000)
         if self.fileName is None:
             self.fileName = QFileDialog.getSaveFileName(self,"Save CSV", QDir.homePath(), "CSV Files (*.csv)")
         CSVManager.exportCSV(self, self.fileName[0], self.model.getDataForExport())
 
     def saveAs(self):
+        self.view.statusBar.showMessage("Saving to file...", 2000)
         self.fileName = QFileDialog.getSaveFileName(self,"Save CSV", QDir.homePath(), "CSV Files (*.csv)")
         CSVManager.exportCSV(self, self.fileName[0], self.model.getDataForExport())
 
     def exit(self):
+        self.view.statusBar.showMessage("Exiting...", 2000)
         sys.exit()
 
     def addNewRow(self):
+        self.view.statusBar.showMessage("Adding new row...", 1000)
         self.model.insertRow()
 
     def duplicateRow(self):
+        self.view.statusBar.showMessage("Duplicating rows...", 1000)
         selected = self.view.tableView.selectedIndexes()
         self.model.duplicateRow(selected)
 
     def deleteRow(self):
+        self.view.statusBar.showMessage("Deleting rows...", 1000)
         selected = self.view.tableView.selectedIndexes()
         self.model.deleteRow(selected)
 
@@ -100,12 +110,15 @@ class Controller(QMainWindow):
         pass
 
     def saveToDB(self):
+        self.view.statusBar.showMessage("Saving to database...", 3000)
         pass
 
     def loadFromDB(self):
+        self.view.statusBar.showMessage("Loading from database...", 3000)
         pass
 
     def generateProjection(self):
+        self.view.statusBar.showMessage("Generating projection...", 3000)
         pass
 
 if __name__ == "__main__":

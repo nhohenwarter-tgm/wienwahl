@@ -1,7 +1,7 @@
 from PySide.QtCore import *
 from PySide import QtCore
 
-import csv
+import csv, operator
 
 
 class TableModel(QAbstractTableModel):
@@ -85,9 +85,18 @@ class TableModel(QAbstractTableModel):
 
         self.update(self.csvheader,newdata)
 
+    def sort(self, ncol, order):
+        self.emit(SIGNAL("layoutAboutToBeChanged()"))
+        self.csvdata = sorted(self.csvdata, key=operator.itemgetter(ncol))
+        if order == Qt.DescendingOrder:
+            self.csvdata.reverse()
+        self.emit(SIGNAL("layoutChanged()"))
+
     def flags(self, index):
         if (index.column() == 0):
             return QtCore.Qt.ItemIsEnabled
+        elif index.row == 0:
+            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.SortOrder
         else:
             return QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsEnabled | Qt.ItemIsSelectable
 
