@@ -14,11 +14,12 @@ import csv
 
 
 class Controller(QMainWindow):
-    def __init__(self, parent=None):
+    def __init__(self, app, parent=None):
         #GUI Initialisierien
         super(Controller, self).__init__(parent)
         self.view = Ui_Wienwahl()
         self.view.setupUi(self)
+        self.app = app
 
         #Shortcuts erstellen
         self.createShortcuts()
@@ -37,37 +38,51 @@ class Controller(QMainWindow):
         self.view.actionExit.triggered.connect(self.exit)
         self.view.actionOpen.triggered.connect(self.open)
         self.view.actionNew.triggered.connect(self.new)
+        self.view.actionSave.triggered.connect(self.save)
+        self.view.actionSaveAs.triggered.connect(self.saveAs)
+        self.view.actionAddNewRow.triggered.connect(self.addNewRow)
+        self.view.actionDuplicateRow.triggered.connect(self.duplicateRow)
+        self.view.actionDeleteRow.triggered.connect(self.deleteRow)
 
     def open(self):
-        self.fileName = QFileDialog.getOpenFileName(self,"Open Image", QDir.homePath(), "CSV Files (*.csv)")
+        self.fileName = QFileDialog.getOpenFileName(self,"Open CSV", QDir.homePath(), "CSV Files (*.csv)")
         csv = CSVManager.importCSV(self, self.fileName[0])
         self.model.update(csv[0],csv[1])
+        self.view.tableView.reset()
+        self.view.tableView.repaint()
         self.view.tableView.setModel(self.model)
 
 
     def new(self):
-        csvheader = [["Col1"],["Col2"]]
-        csvdata = [["Data1","Data2"]]
+        csvheader = [["#"],["Col1"],["Col2"]]
+        csvdata = [["1","Data1","Data2"]]
         self.model.update(csvheader, csvdata)
+        self.view.tableView.reset()
+        self.view.tableView.repaint()
         self.view.tableView.setModel(self.model)
 
     def save(self):
-        pass
+        if self.fileName is None:
+            self.fileName = QFileDialog.getSaveFileName(self,"Save CSV", QDir.homePath(), "CSV Files (*.csv)")
+        CSVManager.exportCSV(self, self.fileName[0], self.model.getDataForExport())
 
     def saveAs(self):
-        pass
+        self.fileName = QFileDialog.getSaveFileName(self,"Save CSV", QDir.homePath(), "CSV Files (*.csv)")
+        CSVManager.exportCSV(self, self.fileName[0], self.model.getDataForExport())
 
     def exit(self):
         sys.exit()
 
     def addNewRow(self):
-        pass
+        self.model.insertRow()
 
     def duplicateRow(self):
-        pass
+        selected = self.view.tableView.selectedIndexes()
+        self.model.duplicateRow(selected)
 
     def deleteRow(self):
-        pass
+        selected = self.view.tableView.selectedIndexes()
+        self.model.deleteRow(selected)
 
     def copy(self):
         pass
@@ -95,6 +110,6 @@ class Controller(QMainWindow):
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
-    c = Controller()
+    c = Controller(app)
     c.show()
     sys.exit(app.exec_())
