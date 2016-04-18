@@ -7,6 +7,7 @@ from PySide.QtGui import *
 
 from view import Ui_Wienwahl
 from model import CSVManager, TableModel
+from database import Database
 
 import sys
 import os
@@ -29,6 +30,7 @@ class Controller(QMainWindow):
 
         #Init
         self.model = TableModel()
+        self.db = Database()
         self.filename = None
         self.view.tableView.setSortingEnabled(True)
         self.view.tableView.resizeColumnsToContents()
@@ -45,6 +47,9 @@ class Controller(QMainWindow):
         self.view.actionAddNewRow.triggered.connect(self.addNewRow)
         self.view.actionDuplicateRow.triggered.connect(self.duplicateRow)
         self.view.actionDeleteRow.triggered.connect(self.deleteRow)
+        self.view.actionSaveToDB.triggered.connect(self.saveToDB)
+        self.view.actionLoadFromDB.triggered.connect(self.loadFromDB)
+        self.view.actionGenerateProjection.triggered.connect(self.generateProjection)
 
     def open(self):
         self.view.statusBar.showMessage("Opening file...", 2000)
@@ -110,16 +115,26 @@ class Controller(QMainWindow):
         pass
 
     def saveToDB(self):
-        self.view.statusBar.showMessage("Saving to database...", 3000)
-        pass
+        export = self.model.getDataForExport()
+        export = [export[0]]+export[1]
+        self.db.save_to_db(export, self.view.statusBar)
 
     def loadFromDB(self):
-        self.view.statusBar.showMessage("Loading from database...", 3000)
-        pass
+        data = self.db.read_from_db(self.view.statusBar)
+        self.model.update(data[0], data[1:])
+        self.view.tableView.reset()
+        self.view.tableView.repaint()
+        self.view.tableView.setModel(self.model)
 
     def generateProjection(self):
-        self.view.statusBar.showMessage("Generating projection...", 3000)
-        pass
+        pro = self.db.generateProjection(self.view.statusBar)
+        if pro is not False:
+            pro_header = [["Partei"],["Stimmen in %"]]
+            self.model.update(pro_header, pro)
+            self.view.tableView.reset()
+            self.view.tableView.repaint()
+            self.view.tableView.setModel(self.model)
+
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
