@@ -8,6 +8,8 @@ from PySide.QtGui import *
 from view import Ui_Wienwahl
 from model import CSVManager, TableModel
 from database import Database
+from delegate import ItemDelegate
+from commands import EditCommand
 
 import sys
 import os
@@ -33,10 +35,16 @@ class Controller(QMainWindow):
         self.db = Database()
         self.filename = None
         self.view.tableView.setSortingEnabled(True)
-        self.view.tableView.resizeColumnsToContents()
+        self.undoStack = QUndoStack()
+        self.view.tableView.setItemDelegate(ItemDelegate(self.undoStack))
 
     def createShortcuts(self):
         QShortcut(QKeySequence("CTRL+Q"), self, self.exit)
+        QShortcut(QKeySequence("CTRL+C"), self, self.copy)
+        QShortcut(QKeySequence("CTRL+V"), self, self.paste)
+        QShortcut(QKeySequence("CTRL+Z"), self, self.undo)
+        QShortcut(QKeySequence("CTRL+Y"), self, self.redo)
+        QShortcut(QKeySequence("CTRL+X"), self, self.cut)
 
     def linkMenu(self):
         self.view.actionExit.triggered.connect(self.exit)
@@ -50,6 +58,11 @@ class Controller(QMainWindow):
         self.view.actionSaveToDB.triggered.connect(self.saveToDB)
         self.view.actionLoadFromDB.triggered.connect(self.loadFromDB)
         self.view.actionGenerateProjection.triggered.connect(self.generateProjection)
+        self.view.actionUndo.triggered.connect(self.undo)
+        self.view.actionRedo.triggered.connect(self.redo)
+        self.view.actionCopy.triggered.connect(self.copy)
+        self.view.actionPaste.triggered.connect(self.paste)
+        self.view.actionCut.triggered.connect(self.cut)
 
     def open(self):
         self.view.statusBar.showMessage("Opening file...", 2000)
@@ -100,19 +113,42 @@ class Controller(QMainWindow):
         self.model.deleteRow(selected)
 
     def copy(self):
-        pass
+        if len(self.view.tableView.selectionModel().selectedIndexes()) != 0:
+            clipboard = QApplication.clipboard()
+            selected_index = self.view.tableView.selectionModel().selectedIndexes()[0]
+            selected_text = str(self.model.data(selected_index))
+            clipboard.setText(selected_text)
 
     def paste(self):
-        pass
+        if len(self.view.tableView.selectionModel().selectedIndexes()) != 0:
+            clipboard = QApplication.clipboard()
+            index = self.view.tableView.selectionModel().selectedIndexes()[0]
+            command = EditCommand(self.model, index)
+            command.newValue(str(clipboard.text()))
+
+            self.undoStack.beginMacro("Paste")
+            self.undoStack.push(command)
+            self.undoStack.endMacro()
+            self.view.tableView.reset()
 
     def cut(self):
-        pass
+        self.copy()
+        index = self.view.tableView.selectionModel().selectedIndexes()[0]
+        command = EditCommand(self.model, index)
+        command.newValue("")
+        self.undoStack.beginMacro("Cut")
+        self.undoStack.push(command)
+        self.undoStack.endMacro()
+        self.view.tableView.reset()
 
     def undo(self):
-        pass
+        print()
+        self.undoStack.undo()
+        self.view.tableView.reset()
 
     def redo(self):
-        pass
+         self.undoStack.redo()
+         self.view.tableView.reset()
 
     def saveToDB(self):
         export = self.model.getDataForExport()
@@ -135,9 +171,13 @@ class Controller(QMainWindow):
             self.view.tableView.repaint()
             self.view.tableView.setModel(self.model)
 
+class DevNull:
+    def write(self, msg):
+        pass
 
 if __name__ == "__main__":
     app = QtGui.QApplication(sys.argv)
+    sys.stderr = DevNull()
     c = Controller(app)
     c.show()
     sys.exit(app.exec_())
